@@ -1,0 +1,34 @@
+id = "numbered-workspaces"
+name = "Numbered Workspaces"
+version = "0.1.0"
+min_herdr_version = "0.7.4"
+description = "Mirror each space's ordinal into a metadata token so the sidebar can show it."
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "renumber"
+title = "Renumber spaces"
+contexts = ["global"]
+command = ["./renumber.sh"]
+
+# The three events that can change a space's ordinal.
+
+[[events]]
+on = "workspace.created"
+command = ["./renumber.sh"]
+
+[[events]]
+on = "workspace.closed"
+command = ["./renumber.sh"]
+
+[[events]]
+on = "workspace.moved"
+command = ["./renumber.sh"]
+
+# Tokens are in-memory only and do not survive a server restart. Focus is the
+# first event after reattaching, so it doubles as the recovery hook; the script
+# only writes tokens that differ, so the steady-state cost is one API call.
+
+[[events]]
+on = "workspace.focused"
+command = ["./renumber.sh"]
