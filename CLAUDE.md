@@ -59,6 +59,29 @@ workspaces in `api snapshot`, but `pane get`, `pane list`, and `agent list` all
 lack it — so there is nothing to diff against and no way to verify a published
 agent token except by looking at the sidebar.
 
+## Why tabs are out of scope
+
+Also considered and rejected. Tabs have the *best* ordinal of the three —
+`herdr tab list` returns an explicit `number` per workspace, so unlike agents
+the list order does not even matter. The problem is the other two halves:
+
+- No tab metadata API. The socket schema defines exactly
+  `WorkspaceReportMetadataParams` and `PaneReportMetadataParams`. There is no
+  tab equivalent, so there is nothing to publish a token to.
+- No tab render surface. herdr has two row-layout surfaces, `ui.sidebar.spaces`
+  (`$name` = custom workspace metadata) and `ui.sidebar.agents` (`$name` =
+  custom pane metadata). The tab bar accepts no tokens.
+
+The only lever is `herdr tab rename`, which mutates labels the user owns: it
+must strip and re-add its own prefix on every reorder, it emits `tab.renamed`
+so the hook can feed itself, it races the user's own renames, and it cannot
+reliably tell an auto-labelled tab from one a user named `"3"`. Renaming an
+auto-labelled tab also makes it custom, so herdr stops auto-updating it — the
+plugin would create the problem it set out to solve.
+
+Note `switch_tab` is bound to `prefix+1..9` by default, unlike `switch_workspace`
+and `focus_agent` which ship unbound.
+
 ## Things that are easy to get wrong
 
 - `herdr plugin link` does **not** run build commands and does **not** copy
