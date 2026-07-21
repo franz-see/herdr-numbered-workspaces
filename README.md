@@ -8,8 +8,10 @@ Puts a number in front of every space in herdr's left-hand spaces sidebar.
 3  ● agora-docs
 ```
 
-herdr binds `switch_workspace` to `prefix+shift+1..9`, but the sidebar never
-shows you which space is which number. This plugin closes that loop.
+Most useful alongside herdr's indexed `switch_workspace` binding: that key jumps
+you straight to space *n*, but nothing in the sidebar tells you which space is
+which number. This plugin closes that loop. See
+[Pairs with indexed switching](#pairs-with-indexed-switching).
 
 ## How it works
 
@@ -61,6 +63,24 @@ herdr plugin action invoke numbered-workspaces.renumber
 **The config step is not optional.** Nothing in a herdr manifest can edit your
 `config.toml`, so without `"$num"` in `rows` the plugin runs correctly and you
 see no difference.
+
+## Pairs with indexed switching
+
+The numbers earn their keep once you can actually jump to them. herdr ships
+`switch_workspace` **unbound** — it is an optional indexed binding you opt into:
+
+```toml
+[keys]
+prefix = "ctrl+a"
+switch_workspace = "prefix+shift+1..9"
+```
+
+Now `prefix+shift+3` jumps to the third space, and the sidebar shows you which
+one that is before you press it. Without the binding the numbers are decoration;
+without the plugin the binding is a guessing game. They are two halves of the
+same feature.
+
+The range caps at 9, so only the first nine spaces are reachable this way.
 
 ## Configuration
 
