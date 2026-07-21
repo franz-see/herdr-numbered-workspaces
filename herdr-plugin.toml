@@ -1,17 +1,17 @@
 id = "numbered-workspaces"
 name = "Numbered Workspaces"
-version = "0.1.0"
+version = "0.2.0"
 min_herdr_version = "0.7.4"
-description = "Mirror each space's ordinal into a metadata token so the sidebar can show it."
+description = "Mirror each space's and agent's ordinal into a metadata token so the sidebars can show it."
 platforms = ["linux", "macos"]
 
 [[actions]]
 id = "renumber"
-title = "Renumber spaces"
+title = "Renumber spaces and agents"
 contexts = ["global"]
 command = ["./renumber.sh"]
 
-# The three events that can change a space's ordinal.
+# A space's ordinal changes when spaces are added, removed, or reordered.
 
 [[events]]
 on = "workspace.created"
@@ -25,9 +25,47 @@ command = ["./renumber.sh"]
 on = "workspace.moved"
 command = ["./renumber.sh"]
 
+# An agent's ordinal is its position in a flat walk of every workspace, then
+# every tab, then every pane in layout order — so anything that reorders any of
+# those three levels renumbers the agents below it.
+
+[[events]]
+on = "tab.created"
+command = ["./renumber.sh"]
+
+[[events]]
+on = "tab.closed"
+command = ["./renumber.sh"]
+
+[[events]]
+on = "tab.moved"
+command = ["./renumber.sh"]
+
+[[events]]
+on = "pane.created"
+command = ["./renumber.sh"]
+
+[[events]]
+on = "pane.closed"
+command = ["./renumber.sh"]
+
+[[events]]
+on = "pane.exited"
+command = ["./renumber.sh"]
+
+[[events]]
+on = "pane.moved"
+command = ["./renumber.sh"]
+
+# A pane only joins the agents list once herdr recognises an agent in it, which
+# happens well after the pane itself was created.
+
+[[events]]
+on = "pane.agent_detected"
+command = ["./renumber.sh"]
+
 # Tokens are in-memory only and do not survive a server restart. Focus is the
-# first event after reattaching, so it doubles as the recovery hook; the script
-# only writes tokens that differ, so the steady-state cost is one API call.
+# first event after reattaching, so it doubles as the recovery hook.
 
 [[events]]
 on = "workspace.focused"
