@@ -7,10 +7,25 @@
 
 ## What this is
 
-A herdr plugin that mirrors each space's ordinal into a `num` metadata token so
-`ui.sidebar.spaces` can render it via the `"$num"` row token. Published to
-GitHub as `abrose/herdr-numbered-workspaces`, installable with
-`herdr plugin install`.
+A herdr plugin that reconstructs expanded-sidebar workspace order and publishes
+one-based positions as `num` metadata for the `"$num"` row token. Published as
+`abrose/herdr-numbered-workspaces`; local checkouts and forks can be registered
+with `herdr plugin link`.
+
+## Workspace numbering contract
+
+Do not mirror the API `number` directly: it is flat storage order. In Herdr 0.8.2,
+`workspace_list_entries_inner()` groups repository members at the first member,
+main workspace first, with children retaining API order. Groups require at least
+two members and a main workspace. The script reproduces that expanded order.
+
+The workspace API does not expose group collapse state or visible ordinals.
+Numbers are only reliable navigation hints with worktree groups expanded. Do not
+claim collapse-aware numbering without a new API contract. Runtime dependencies
+remain Bash and jq; Python is only used for fake-CLI regression tests.
+
+Run `python3 -B -m unittest discover -s tests -v` and `bash -n renumber.sh`.
+Tests must compare grouped sidebar positions, not just `tokens.num == number`.
 
 ## Why `min_herdr_version` is 0.7.4
 

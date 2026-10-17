@@ -1,11 +1,12 @@
 # Numbered Workspaces
 
-Puts a number in front of every space in herdr's left-hand spaces sidebar.
+Puts an expanded-sidebar navigation number in front of every space in herdr's
+left-hand spaces sidebar, including grouped worktrees.
 
 ```
-1  ● feat-APP-5421-hexagonize-market-research-agent
-2  ● dotfiles-chezmoi
-3  ● agora-docs
+1  ● feat-search
+2  ● dotfiles
+3  ● example-docs
 ```
 
 Most useful alongside herdr's indexed `switch_workspace` binding: that key jumps
@@ -15,19 +16,35 @@ which number. This plugin closes that loop. See
 
 ## How it works
 
-`herdr workspace list` already reports each space's ordinal as `number`, but
-herdr has no built-in sidebar row token for it. The plugin mirrors that ordinal
-back into herdr as a `num` metadata token, which the sidebar *can* render via
-the `"$num"` row token.
+`herdr workspace list` reports `number` in flat storage order. Navigation uses
+sidebar order instead: linked worktrees appear beneath their repository's main
+workspace, even when other workspaces separate them in the API list.
 
-Ordinals shift whenever a space is created, closed, or moved, so the plugin
-hooks those three events and rewrites the tokens. It also hooks
-`workspace.focused`: metadata tokens live in memory and do not survive a server
-restart, and focus is the first event after reattaching, so it doubles as the
-recovery hook.
+The plugin reconstructs Herdr's **expanded** sidebar order using
+`worktree.repo_key` and `worktree.is_linked_worktree`:
 
-Each run writes only the spaces whose token disagrees with their current
-number, so the steady state — nothing moved — costs a single API call.
+- At the first member of a repository group, emit the main workspace first,
+  followed by its other members in their original API order.
+- Group only repositories with at least two members and a main workspace.
+- Keep ungrouped workspaces in their original order and emit each workspace once.
+
+It publishes the resulting one-based positions as `num` metadata, rendered by
+the `"$num"` row token. For example, `[main, btop, linked-worktree]` becomes
+`[main, linked-worktree, btop]`: the worktree gets **2**, not its API number **3**.
+
+The plugin hooks `workspace.created`, `workspace.closed`, `workspace.moved`, and
+`workspace.focused` to refresh the numbers. Focus also repopulates metadata after
+a server restart. Only changed tokens are written, so steady state costs one API
+call.
+
+### Limitation: collapsed worktree groups
+
+**Keep worktree groups expanded when using these numbers as shortcuts.** The
+inspected Herdr 0.8.2 workspace API does not expose group collapse state or the
+actual visible navigation ordinal. Collapsing a group can change shortcut
+positions without changing the plugin's expanded-order numbers. A plugin-only
+implementation cannot guarantee correct numbers in that state. This limitation
+concerns repository groups, not the sidebar visibility toggle.
 
 ## Requirements
 
@@ -38,9 +55,20 @@ number, so the steady state — nothing moved — costs a single API call.
 
 ## Install
 
+For a local checkout:
+
 ```bash
-herdr plugin install abrose/herdr-numbered-workspaces --yes
+herdr plugin link /path/to/herdr-numbered-workspaces
 ```
+
+Once the changes are released upstream, install from GitHub:
+
+```bash
+herdr plugin install abrose/herdr-numbered-workspaces
+```
+
+If this plugin ID is already locally linked, use `plugin link` to point it at
+your checkout rather than attempting a GitHub install over the local link.
 
 Then add the `"$num"` token to your spaces sidebar in
 `~/.config/herdr/config.toml`:
@@ -78,10 +106,10 @@ prefix = "ctrl+a"
 switch_workspace = "prefix+shift+1..9"
 ```
 
-Now `prefix+shift+3` jumps to the third space, and the sidebar shows you which
-one that is before you press it. Without the binding the numbers are decoration;
-without the plugin the binding is a guessing game. They are two halves of the
-same feature.
+With worktree groups expanded, `prefix+shift+3` jumps to the third sidebar
+workspace. The same numbering applies to `prefix`, then `w`, then `3` using the
+default workspace navigation binding; no custom indexed binding is required for
+that route.
 
 The range caps at 9, so only the first nine spaces are reachable this way. The
 plugin still numbers past 9, since the position is worth knowing even where no
@@ -123,8 +151,25 @@ To confirm the tokens are actually being published:
 herdr workspace list | jq '.result.workspaces[] | {label, number, tokens}'
 ```
 
-If `tokens.num` matches `number` but the sidebar shows nothing, the `"$num"`
-row token is missing from your config.
+`tokens.num` should match the workspace's position in the **expanded sidebar**,
+not necessarily the API's `number`. A mismatch between those two fields is
+expected when worktrees are grouped. If metadata is present but the sidebar
+shows no numbers, check that `"$num"` is in your row configuration. If navigation
+lands elsewhere, expand all worktree groups and invoke the renumber action again.
+
+## Tests
+
+Development tests require Python 3 as well as the runtime Bash and jq dependencies:
+
+```bash
+python3 -B -m unittest discover -s tests -v
+bash -n renumber.sh
+```
+
+Tests execute the actual script against a fake Herdr CLI; they do not read or
+modify a live session. They cover non-contiguous worktrees, multiple repositories,
+parent/child ordering, unchanged tokens, CLI failures, and direct execution on
+NixOS. The script resolves Bash through `PATH`, so `/bin/bash` is not required.
 
 ## License
 

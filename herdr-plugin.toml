@@ -1,8 +1,8 @@
 id = "numbered-workspaces"
 name = "Numbered Workspaces"
-version = "0.3.0"
+version = "0.3.1"
 min_herdr_version = "0.7.4"
-description = "Mirror each space's ordinal into a metadata token so the sidebar can show it."
+description = "Show expanded-sidebar navigation positions, including grouped worktrees."
 platforms = ["linux", "macos"]
 
 [[actions]]
